@@ -2,7 +2,7 @@
 FROM 192.168.233.9:80/base/openjdk:8-jre-alpine
 
 # 设置工作目录
-WORKDIR /app
+# WORKDIR /app
 
 # 复制 JAR 文件
 COPY target/demo-helloworld-*.jar app.jar
