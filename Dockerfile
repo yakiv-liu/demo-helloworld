@@ -8,7 +8,7 @@ FROM 192.168.233.9:80/base/openjdk:8-jre-alpine
 COPY target/demo-helloworld.jar app.jar
 
 # 暴露端口
-EXPOSE 8080
+EXPOSE 8085
 
 # 设置启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
