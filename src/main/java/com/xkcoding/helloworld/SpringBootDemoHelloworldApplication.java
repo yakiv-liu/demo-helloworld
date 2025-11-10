@@ -36,4 +36,8 @@ public class SpringBootDemoHelloworldApplication {
         }
         return StrUtil.format("Hello, {}! Friend!", who);
     }
+    @GetMapping("/health")
+    public String checkHealth() {
+        return "Ready";
+    }
 }
