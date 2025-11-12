@@ -7,45 +7,39 @@ properties([
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
                 choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
         ]),
-        // ========== 修改：使用 Generic Webhook Trigger 精确捕获 PR 事件 ==========
+        // ========== 修复：使用正确的 ExpressionType ==========
         pipelineTriggers([
                 [
                         $class: 'GenericTrigger',
                         genericVariables: [
                                 [
                                         key: 'action',
-                                        value: '$.action',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.action'
+                                        // 移除 expressionType 或者使用正确的值
                                 ],
                                 [
                                         key: 'pr_number',
-                                        value: '$.number',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.number'
                                 ],
                                 [
                                         key: 'pr_state',
-                                        value: '$.pull_request.state',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.pull_request.state'
                                 ],
                                 [
                                         key: 'pr_merged',
-                                        value: '$.pull_request.merged',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.pull_request.merged'
                                 ],
                                 [
                                         key: 'head_ref',
-                                        value: '$.pull_request.head.ref',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.pull_request.head.ref'
                                 ],
                                 [
                                         key: 'base_ref',
-                                        value: '$.pull_request.base.ref',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.pull_request.base.ref'
                                 ],
                                 [
                                         key: 'head_sha',
-                                        value: '$.pull_request.head.sha',
-                                        expressionType: 'JSONPATH'
+                                        value: '$.pull_request.head.sha'
                                 ]
                         ],
                         token: 'demo-helloworld-pr',
@@ -59,7 +53,8 @@ properties([
         ])
 ])
 
-// ========== 修改：基于 Generic Webhook 参数判断 ==========
+// ========== 基于 Generic Webhook 参数判断 ==========
+// 注意：这些变量现在由 Generic Webhook Trigger 自动提供
 def isPR = (action == 'opened' || action == 'reopened' || action == 'synchronize') && pr_state == 'open'
 
 echo "=== PR Pipeline 事件检测 ==="
@@ -78,7 +73,7 @@ if (!isPR) {
     return
 }
 
-// 设置 PR 相关的环境变量，这样 prPipeline.groovy 就能正确识别了
+// 设置 PR 相关的环境变量
 env.CHANGE_ID = pr_number
 env.CHANGE_BRANCH = head_ref
 env.CHANGE_TARGET = base_ref
