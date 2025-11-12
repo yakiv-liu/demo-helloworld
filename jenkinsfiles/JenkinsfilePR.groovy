@@ -36,7 +36,7 @@ properties([
                 // PR 流水线特定参数
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
                 choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
-        ]),
+        ])
         // ========== 修改点2：移除有问题的 GitHubPRTrigger，使用标准触发器 ==========
 //        pipelineTriggers([
 //                [
