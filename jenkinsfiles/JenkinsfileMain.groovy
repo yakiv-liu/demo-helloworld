@@ -15,7 +15,7 @@ properties([
         ])
 ])
 
-// ========== 修改点2：简化配置，移除项目分支等重复信息 ==========
+// ========== 修改点2：修复空指针异常，添加空值检查 ==========
 // 调用共享库，传递必要配置
 mainPipeline([
         // 基础配置
@@ -27,12 +27,12 @@ mainPipeline([
 
         // 用户选择参数
         deployEnv: params.DEPLOY_ENV,
-        rollback: params.ROLLBACK.toBoolean(),
-        rollbackVersion: params.ROLLBACK_VERSION,
-        isRelease: params.IS_RELEASE.toBoolean(),
+        rollback: params.ROLLBACK?.toBoolean() ?: false,  // 修复空指针
+        rollbackVersion: params.ROLLBACK_VERSION ?: '',
+        isRelease: params.IS_RELEASE?.toBoolean() ?: false,  // 修复空指针
 
-        // 依赖检查配置
-        skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
+        // 依赖检查配置 - 修复空指针异常
+        skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK?.toBoolean() ?: true,  // 关键修复
 
         // 项目特定配置
         appPort: 8085,
