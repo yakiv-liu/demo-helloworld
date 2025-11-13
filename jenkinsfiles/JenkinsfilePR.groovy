@@ -18,7 +18,6 @@ pipeline {
                 script {
                     echo "使用 SSH 方式检出代码..."
 
-                    // 重试机制
                     retry(3) {
                         checkout([
                                 $class: 'GitSCM',
@@ -34,7 +33,7 @@ pipeline {
                                 ],
                                 userRemoteConfigs: [[
                                                             url: 'git@github.com:yakiv-liu/demo-helloworld.git',
-                                                            credentialsId: 'github-ssh-key-slave'
+                                                            credentialsId: 'github-ssh-key'
                                                     ]]
                         ])
                     }
@@ -49,6 +48,7 @@ pipeline {
         stage('Run PR Pipeline') {
             steps {
                 script {
+                    // ========== 修改点2：调用没有 pipeline 块的 prPipeline ==========
                     prPipeline([
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
