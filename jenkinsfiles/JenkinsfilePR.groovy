@@ -1,71 +1,20 @@
 @Library('jenkins-pipeline-library@master')_
 
-// ========== 重要修改：添加完整的 GitHub 分支源配置 ==========
-properties([
-        [
-                $class: 'JenkinsBranchProjectProperty',
-                branch: [name: '**']
-        ],
-        [
-                $class: 'BuildDiscarderProperty',
-                strategy: [
-                        $class: 'LogRotator',
-                        artifactDaysToKeepStr: '',
-                        artifactNumToKeepStr: '',
-                        daysToKeepStr: '10',
-                        numToKeepStr: '8'
-                ]
-        ],
-        [
-                $class: 'ParametersDefinitionProperty',
-                parameterDefinitions: [
-                        [
-                                $class: 'StringParameterDefinition',
-                                name: 'PROJECT_NAME',
-                                defaultValue: 'demo-helloworld',
-                                description: '项目名称'
-                        ],
-                        [
-                                $class: 'StringParameterDefinition',
-                                name: 'EMAIL_RECIPIENTS',
-                                defaultValue: '251934304@qq.com',
-                                description: '邮件接收人'
-                        ],
-                        [
-                                $class: 'BooleanParameterDefinition',
-                                name: 'SKIP_DEPENDENCY_CHECK',
-                                defaultValue: true,
-                                description: '跳过依赖检查以加速构建（默认跳过）'
-                        ],
-                        [
-                                $class: 'ChoiceParameterDefinition',
-                                name: 'SCAN_INTENSITY',
-                                choices: 'fast\nstandard\ndeep',
-                                description: '安全扫描强度'
-                        ]
-                ]
-        ],
-        // ========== 新增：GitHub 项目链接 ==========
-        [
-                $class: 'GithubProjectProperty',
-                displayName: 'demo-helloworld PR Pipeline',
-                projectUrlStr: 'https://github.com/yakiv-liu/demo-helloworld/'
-        ],
-        // ========== 新增：Pipeline GitHub 触发器 ==========
-        pipelineTriggers([
-                [
-                        $class: 'githubPushTrigger',
-                        spec: ''
-                ]
-        ])
-])
+// ========== 修改点1：Multibranch Pipeline 不需要复杂的 properties 配置 ==========
+// 移除了之前有问题的 properties 块，Multibranch Pipeline 会自动处理分支和PR发现
 
 pipeline {
     agent {
         label 'docker-jnlp-slave'
     }
 
-    // ========== 移除 parameters 块，因为已经在 properties 中定义 ==========
+    // ========== 修改点2：恢复 parameters 块，但在 Multibranch 中有些参数可能不需要 ==========
+    parameters {
+        string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称')
+        string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人')
+        booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
+        choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
+    }
 
     stages {
         stage('Check PR Event') {
@@ -78,10 +27,6 @@ pipeline {
                     echo "BRANCH_NAME: ${env.BRANCH_NAME}"
                     echo "GIT_BRANCH: ${env.GIT_BRANCH}"
 
-                    // 打印所有环境变量用于调试
-                    echo "=== 所有环境变量 ==="
-                    sh 'env | sort'
-
                     // 打印所有构建原因
                     def causes = currentBuild.getBuildCauses()
                     echo "构建原因:"
@@ -89,21 +34,15 @@ pipeline {
                         echo " - ${cause.shortDescription ?: cause.toString()}"
                     }
 
-                    // 更宽松的 PR 事件检查
+                    // ========== 修改点3：简化 PR 检测逻辑，Multibranch 会自动设置环境变量 ==========
                     if (env.CHANGE_ID) {
                         echo "✅ 确认：这是 PR #${env.CHANGE_ID} 事件，继续执行PR流水线"
                         echo "PR 源分支: ${env.CHANGE_BRANCH}"
                         echo "PR 目标分支: ${env.CHANGE_TARGET}"
-                    } else if (env.GIT_BRANCH && env.GIT_BRANCH.contains('PR-')) {
-                        echo "✅ 确认：基于分支名称检测到 PR 事件"
-                        echo "GIT_BRANCH: ${env.GIT_BRANCH}"
                     } else {
-                        echo "⚠️ 没有检测到标准的 PR 事件环境变量"
-                        echo "环境变量详情:"
-                        echo "CHANGE_ID: ${env.CHANGE_ID}"
-                        echo "CHANGE_URL: ${env.CHANGE_URL}"
-                        echo "CHANGE_TITLE: ${env.CHANGE_TITLE}"
-                        echo "将继续执行，但某些功能可能无法正常工作"
+                        echo "⚠️ 这不是 PR 事件，可能是分支构建"
+                        echo "BRANCH_NAME: ${env.BRANCH_NAME}"
+                        echo "将继续执行，但某些 PR 特定功能可能无法工作"
                     }
                 }
             }
@@ -112,7 +51,7 @@ pipeline {
         stage('Run PR Pipeline') {
             steps {
                 script {
-                    // 调用共享库的PR流水线
+                    // ========== 修改点4：确保参数传递正确 ==========
                     prPipeline([
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
@@ -125,6 +64,22 @@ pipeline {
                     ])
                 }
             }
+        }
+    }
+
+    // ========== 修改点5：添加 post 部分用于构建后处理 ==========
+    post {
+        always {
+            echo "PR Pipeline 执行完成 - 结果: ${currentBuild.result}"
+        }
+        success {
+            echo "✅ PR Pipeline 执行成功"
+        }
+        failure {
+            echo "❌ PR Pipeline 执行失败"
+        }
+        unstable {
+            echo "⚠️ PR Pipeline 执行不稳定"
         }
     }
 }
