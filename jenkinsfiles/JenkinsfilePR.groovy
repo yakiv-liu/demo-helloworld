@@ -3,18 +3,64 @@
 // 完全移除复杂的 Generic Webhook Trigger 配置
 // 我们将依赖 Jenkins 的标准 GitHub 触发器
 
+// ========== 新增：添加 properties 配置，定义 GitHub 分支源 ==========
+properties([
+        pipelineTriggers([
+                [
+                        $class: 'GitHubPushTrigger',
+                        adminlist: '',
+                        allowMembersOfWhitelistedOrgsAsAdmin: true,
+                        cron: '',
+                        triggerOnEvents: []
+                ]
+        ]),
+        [
+                $class: 'BuildDiscarderProperty',
+                strategy: [
+                        $class: 'LogRotator',
+                        artifactDaysToKeepStr: '',
+                        artifactNumToKeepStr: '',
+                        daysToKeepStr: '10',
+                        numToKeepStr: '8'
+                ]
+        ],
+        [
+                $class: 'ParametersDefinitionProperty',
+                parameterDefinitions: [
+                        [
+                                $class: 'StringParameterDefinition',
+                                name: 'PROJECT_NAME',
+                                defaultValue: 'demo-helloworld',
+                                description: '项目名称'
+                        ],
+                        [
+                                $class: 'StringParameterDefinition',
+                                name: 'EMAIL_RECIPIENTS',
+                                defaultValue: '251934304@qq.com',
+                                description: '邮件接收人'
+                        ],
+                        [
+                                $class: 'BooleanParameterDefinition',
+                                name: 'SKIP_DEPENDENCY_CHECK',
+                                defaultValue: true,
+                                description: '跳过依赖检查以加速构建（默认跳过）'
+                        ],
+                        [
+                                $class: 'ChoiceParameterDefinition',
+                                name: 'SCAN_INTENSITY',
+                                choices: 'fast\nstandard\ndeep',
+                                description: '安全扫描强度'
+                        ]
+                ]
+        ]
+])
+
 pipeline {
     agent {
         label 'docker-jnlp-slave'
     }
 
-    // ========== 修复：使用正确的 parameters 语法 ==========
-    parameters {
-        string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称')
-        string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人')
-        booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
-        choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
-    }
+    // ========== 移除 parameters 块，因为已经在 properties 中定义 ==========
 
     stages {
         stage('Check PR Event') {
@@ -31,20 +77,22 @@ pipeline {
                     def causes = currentBuild.getBuildCauses()
                     echo "构建原因:"
                     causes.each { cause ->
-                        echo " - ${cause}"
+                        echo " - ${cause.shortDescription ?: cause.toString()}"
                     }
 
-                    // 检查是否是 PR 事件
-                    if (!env.CHANGE_ID) {
-                        echo "⚠️ 这不是 PR 事件，跳过 PR pipeline 执行"
-                        echo "这可能是 PR merge 后的 push 事件，应该由 main pipeline 处理"
-                        currentBuild.result = 'NOT_BUILT'
-                        return
+                    // 更宽松的 PR 事件检查
+                    if (env.CHANGE_ID) {
+                        echo "✅ 确认：这是 PR #${env.CHANGE_ID} 事件，继续执行PR流水线"
+                        echo "PR 源分支: ${env.CHANGE_BRANCH}"
+                        echo "PR 目标分支: ${env.CHANGE_TARGET}"
+                    } else if (env.GIT_BRANCH && env.GIT_BRANCH.contains('PR-')) {
+                        echo "✅ 确认：基于分支名称检测到 PR 事件"
+                        echo "GIT_BRANCH: ${env.GIT_BRANCH}"
+                    } else {
+                        echo "⚠️ 没有检测到标准的 PR 事件环境变量"
+                        echo "将继续执行，但某些功能可能无法正常工作"
+                        // 不中断构建，继续执行
                     }
-
-                    echo "✅ 确认：这是 PR #${env.CHANGE_ID} 事件，继续执行PR流水线"
-                    echo "PR 源分支: ${env.CHANGE_BRANCH}"
-                    echo "PR 目标分支: ${env.CHANGE_TARGET}"
                 }
             }
         }
