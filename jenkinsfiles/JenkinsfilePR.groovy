@@ -1,96 +1,64 @@
 @Library('jenkins-pipeline-library@master')_
 
-properties([
-        parameters([
-                string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
-                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
-                booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
-                choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
-        ]),
-        pipelineTriggers([
-                [
-                        $class: 'GenericTrigger',
-                        genericVariables: [
-                                [key: 'action', value: '$.action'],
-                                [key: 'pr_number', value: '$.number'],
-                                [key: 'pr_state', value: '$.pull_request.state'],
-                                [key: 'pr_merged', value: '$.pull_request.merged'],
-                                [key: 'head_ref', value: '$.pull_request.head.ref'],
-                                [key: 'base_ref', value: '$.pull_request.base.ref'],
-                                [key: 'head_sha', value: '$.pull_request.head.sha']
-                        ],
-                        token: 'demo-helloworld-pr',
-                        causeString: 'GitHub PR Triggered',
-                        printContributedVariables: true,
-                        printPostContent: true,
-                        regexpFilterText: '$action',
-                        regexpFilterExpression: '^(opened|reopened|synchronize)$',
-                        silentResponse: false
-                ]
-        ])
-])
+// 完全移除复杂的 Generic Webhook Trigger 配置
+// 我们将依赖 Jenkins 的标准 GitHub 触发器
 
 pipeline {
     agent {
         label 'docker-jnlp-slave'
     }
 
+    parameters([
+            string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
+            string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
+            booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
+            choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
+    ])
+
     stages {
-        stage('Process PR Event') {
+        stage('Check PR Event') {
             steps {
                 script {
-                    // ========== 修改：在 script 块内访问 Generic Webhook 变量 ==========
                     echo "=== PR Pipeline 事件检测 ==="
-                    echo "action: ${action}"
-                    echo "pr_number: ${pr_number}"
-                    echo "pr_state: ${pr_state}"
-                    echo "pr_merged: ${pr_merged}"
-                    echo "head_ref: ${head_ref}"
-                    echo "base_ref: ${base_ref}"
-                    echo "head_sha: ${head_sha}"
+                    echo "CHANGE_ID: ${env.CHANGE_ID}"
+                    echo "CHANGE_BRANCH: ${env.CHANGE_BRANCH}"
+                    echo "CHANGE_TARGET: ${env.CHANGE_TARGET}"
+                    echo "BRANCH_NAME: ${env.BRANCH_NAME}"
+                    echo "GIT_BRANCH: ${env.GIT_BRANCH}"
 
-                    // 检查是否是 PR 事件
-                    def isPR = (action == 'opened' || action == 'reopened' || action == 'synchronize') && pr_state == 'open'
-
-                    echo "isPR: ${isPR}"
-
-                    if (!isPR) {
-                        echo "⚠️ 这不是 PR 创建/更新事件，跳过 PR pipeline 执行"
-                        currentBuild.result = 'NOT_BUILT'
-                        error("不是 PR 事件，构建中止")
+                    // 打印所有构建原因
+                    def causes = currentBuild.getBuildCauses()
+                    echo "构建原因:"
+                    causes.each { cause ->
+                        echo " - ${cause}"
                     }
 
-                    // 设置 PR 相关的环境变量
-                    env.CHANGE_ID = pr_number
-                    env.CHANGE_BRANCH = head_ref
-                    env.CHANGE_TARGET = base_ref
-                    env.GIT_COMMIT = head_sha
+                    // 检查是否是 PR 事件
+                    if (!env.CHANGE_ID) {
+                        echo "⚠️ 这不是 PR 事件，跳过 PR pipeline 执行"
+                        echo "这可能是 PR merge 后的 push 事件，应该由 main pipeline 处理"
+                        currentBuild.result = 'NOT_BUILT'
+                        return
+                    }
 
-                    echo "✅ 确认：这是 PR #${pr_number} 事件，继续执行PR流水线"
-                    echo "PR 源分支: ${head_ref}"
-                    echo "PR 目标分支: ${base_ref}"
-                    echo "PR Commit SHA: ${head_sha}"
+                    echo "✅ 确认：这是 PR #${env.CHANGE_ID} 事件，继续执行PR流水线"
+                    echo "PR 源分支: ${env.CHANGE_BRANCH}"
+                    echo "PR 目标分支: ${env.CHANGE_TARGET}"
                 }
             }
         }
 
         stage('Run PR Pipeline') {
-            when {
-                expression { env.CHANGE_ID != null }
-            }
             steps {
                 script {
                     // 调用共享库的PR流水线
                     prPipeline([
-                            // 基础配置
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
                             repo: 'demo-helloworld',
                             agentLabel: 'docker-jnlp-slave',
                             defaultBranch: 'main',
                             defaultEmail: params.EMAIL_RECIPIENTS,
-
-                            // PR 特定配置
                             skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
                             scanIntensity: params.SCAN_INTENSITY
                     ])
