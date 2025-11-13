@@ -33,7 +33,7 @@ pipeline {
                                 ],
                                 userRemoteConfigs: [[
                                                             url: 'git@github.com:yakiv-liu/demo-helloworld.git',
-                                                            credentialsId: 'github-ssh-key'
+                                                            credentialsId: 'github-ssh-key-slave'
                                                     ]]
                         ])
                     }
