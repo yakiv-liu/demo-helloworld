@@ -13,33 +13,16 @@ pipeline {
     }
 
     stages {
-        stage('Checkout via SSH') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    echo "使用 SSH 方式检出代码..."
-
-                    retry(3) {
-                        checkout([
-                                $class: 'GitSCM',
-                                branches: [[name: env.BRANCH_NAME]],
-                                extensions: [
-                                        [$class: 'CleanCheckout'],
-                                        [$class: 'RelativeTargetDirectory', relativeTargetDir: 'src'],
-                                        [$class: 'CloneOption',
-                                         timeout: 5,
-                                         depth: 1,
-                                         noTags: true,
-                                         shallow: true]
-                                ],
-                                userRemoteConfigs: [[
-                                                            url: 'git@github.com:yakiv-liu/demo-helloworld.git',
-                                                            credentialsId: 'github-ssh-key-slave'
-                                                    ]]
-                        ])
-                    }
+                    echo "检出代码..."
+                    // Multibranch Pipeline 会自动处理代码检出
+                    // 我们只需要验证代码是否已检出
 
                     dir('src') {
                         sh 'git log -1 --oneline'
+                        sh 'git branch -a'
                     }
                 }
             }
@@ -48,7 +31,6 @@ pipeline {
         stage('Run PR Pipeline') {
             steps {
                 script {
-                    // ========== 修改点2：调用没有 pipeline 块的 prPipeline ==========
                     prPipeline([
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
