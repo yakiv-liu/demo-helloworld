@@ -1,19 +1,11 @@
 @Library('jenkins-pipeline-library@master')_
 
-// 完全移除复杂的 Generic Webhook Trigger 配置
-// 我们将依赖 Jenkins 的标准 GitHub 触发器
-
-// ========== 新增：添加 properties 配置，定义 GitHub 分支源 ==========
+// ========== 重要修改：添加完整的 GitHub 分支源配置 ==========
 properties([
-        pipelineTriggers([
-                [
-                        $class: 'GitHubPushTrigger',
-                        adminlist: '',
-                        allowMembersOfWhitelistedOrgsAsAdmin: true,
-                        cron: '',
-                        triggerOnEvents: []
-                ]
-        ]),
+        [
+                $class: 'JenkinsBranchProjectProperty',
+                branch: [name: '**']
+        ],
         [
                 $class: 'BuildDiscarderProperty',
                 strategy: [
@@ -52,7 +44,20 @@ properties([
                                 description: '安全扫描强度'
                         ]
                 ]
-        ]
+        ],
+        // ========== 新增：GitHub 项目链接 ==========
+        [
+                $class: 'GithubProjectProperty',
+                displayName: 'demo-helloworld PR Pipeline',
+                projectUrlStr: 'https://github.com/yakiv-liu/demo-helloworld/'
+        ],
+        // ========== 新增：Pipeline GitHub 触发器 ==========
+        pipelineTriggers([
+                [
+                        $class: 'githubPushTrigger',
+                        spec: ''
+                ]
+        ])
 ])
 
 pipeline {
@@ -73,6 +78,10 @@ pipeline {
                     echo "BRANCH_NAME: ${env.BRANCH_NAME}"
                     echo "GIT_BRANCH: ${env.GIT_BRANCH}"
 
+                    // 打印所有环境变量用于调试
+                    echo "=== 所有环境变量 ==="
+                    sh 'env | sort'
+
                     // 打印所有构建原因
                     def causes = currentBuild.getBuildCauses()
                     echo "构建原因:"
@@ -90,8 +99,11 @@ pipeline {
                         echo "GIT_BRANCH: ${env.GIT_BRANCH}"
                     } else {
                         echo "⚠️ 没有检测到标准的 PR 事件环境变量"
+                        echo "环境变量详情:"
+                        echo "CHANGE_ID: ${env.CHANGE_ID}"
+                        echo "CHANGE_URL: ${env.CHANGE_URL}"
+                        echo "CHANGE_TITLE: ${env.CHANGE_TITLE}"
                         echo "将继续执行，但某些功能可能无法正常工作"
-                        // 不中断构建，继续执行
                     }
                 }
             }
