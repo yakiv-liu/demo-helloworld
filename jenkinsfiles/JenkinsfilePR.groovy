@@ -20,10 +20,9 @@ pipeline {
                     // Multibranch Pipeline 会自动处理代码检出
                     // 我们只需要验证代码是否已检出
 
-                    dir('src') {
-                        sh 'git log -1 --oneline'
-                        sh 'git branch -a'
-                    }
+                    // ========== 关键修改：移除 dir('src') 包装 ==========
+                    sh 'git log -1 --oneline'
+                    sh 'git branch -a'
                 }
             }
         }
