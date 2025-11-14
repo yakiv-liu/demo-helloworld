@@ -13,20 +13,33 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
+        // ========== 新增：目标分支检查阶段 ==========
+        stage('Check PR Target Branch') {
             steps {
                 script {
-                    echo "检出代码..."
-                    // Multibranch Pipeline 会自动处理代码检出
-                    // 我们只需要验证代码是否已检出
+                    echo "检查 PR 目标分支..."
+                    echo "当前分支: ${env.BRANCH_NAME}"
+                    echo "PR 目标分支: ${env.CHANGE_TARGET}"
+                    echo "PR 源分支: ${env.CHANGE_BRANCH}"
+                    echo "PR 编号: ${env.CHANGE_ID}"
 
-                    // ========== 关键修改：移除 dir('src') 包装 ==========
-                    sh 'git log -1 --oneline'
-                    sh 'git branch -a'
+                    // 定义允许的目标分支
+                    def allowedTargetBranches = ['master', 'main']
+
+                    // 检查是否在允许的目标分支列表中
+                    if (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET)) {
+                        echo "✅ PR 目标分支验证通过: ${env.CHANGE_TARGET}"
+                        currentBuild.description = "PR to ${env.CHANGE_TARGET}"
+                    } else {
+                        echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
+                        currentBuild.result = 'SUCCESS'
+                        currentBuild.description = "跳过 - 目标分支 ${env.CHANGE_TARGET} 不受支持"
+                        // 直接结束 pipeline
+                        return
+                    }
                 }
             }
         }
-
         stage('Run PR Pipeline') {
             steps {
                 script {
@@ -41,6 +54,17 @@ pipeline {
                             scanIntensity: params.SCAN_INTENSITY
                     ])
                 }
+            }
+        }
+    }
+
+    // ========== 新增：后处理逻辑 ==========
+    post {
+        always {
+            script {
+                echo "PR Pipeline 执行完成 - 结果: ${currentBuild.result}"
+                // 清理工作空间
+                cleanWs()
             }
         }
     }
