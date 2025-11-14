@@ -7,7 +7,7 @@ properties([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
                 string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),
-                booleanParam(name: 'IS_RELEASE', defaultValue: false, description: '正式发布'),
+//                booleanParam(name: 'IS_RELEASE', defaultValue: false, description: '正式发布'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
         ])
@@ -25,7 +25,7 @@ masterAutoDeployPipeline([
         defaultEmail: params.EMAIL_RECIPIENTS,
 
         // 用户选择参数
-        isRelease: params.IS_RELEASE.toBoolean(),
+//        isRelease: params.IS_RELEASE.toBoolean(),
 
         // 跳过依赖检查参数
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
