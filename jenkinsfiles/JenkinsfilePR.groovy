@@ -18,14 +18,6 @@ pipeline {
         label 'docker-jnlp-slave'
     }
 
-    options {
-        // 每个分支项目内部的构建记录保留策略
-        buildDiscarder(logRotator(
-                daysToKeep: 7,     // 每个分支保留7天的构建记录
-                numToKeep: 5       // 每个分支最多保留5个构建记录
-        ))
-    }
-
     parameters {
         string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称')
         string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人')
