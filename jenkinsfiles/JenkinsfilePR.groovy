@@ -4,6 +4,7 @@
 def allowedTargetBranches = ['master', 'main']
 def shouldRunPipeline = (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET))
 
+
 if (!shouldRunPipeline) {
     echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
     currentBuild.result = 'SUCCESS'
