@@ -1,5 +1,17 @@
 @Library('jenkins-pipeline-library@master')_
 
+// ========== 新增：在 pipeline 外部进行目标分支检查 ==========
+def allowedTargetBranches = ['master', 'main']
+def shouldRunPipeline = (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET))
+
+if (!shouldRunPipeline) {
+    echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
+    currentBuild.result = 'SUCCESS'
+    currentBuild.description = "跳过 - 目标分支 ${env.CHANGE_TARGET} 不受支持"
+    // 直接返回，不执行 pipeline
+    return
+}
+
 pipeline {
     agent {
         label 'docker-jnlp-slave'
@@ -13,30 +25,14 @@ pipeline {
     }
 
     stages {
-        // ========== 新增：目标分支检查阶段 ==========
-        stage('Check PR Target Branch') {
+        stage('PR Info') {
             steps {
                 script {
-                    echo "检查 PR 目标分支..."
+                    echo "✅ PR 目标分支验证通过: ${env.CHANGE_TARGET}"
                     echo "当前分支: ${env.BRANCH_NAME}"
-                    echo "PR 目标分支: ${env.CHANGE_TARGET}"
                     echo "PR 源分支: ${env.CHANGE_BRANCH}"
                     echo "PR 编号: ${env.CHANGE_ID}"
-
-                    // 定义允许的目标分支
-                    def allowedTargetBranches = ['master', 'main']
-
-                    // 检查是否在允许的目标分支列表中
-                    if (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET)) {
-                        echo "✅ PR 目标分支验证通过: ${env.CHANGE_TARGET}"
-                        currentBuild.description = "PR to ${env.CHANGE_TARGET}"
-                    } else {
-                        echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
-                        currentBuild.result = 'SUCCESS'
-                        currentBuild.description = "跳过 - 目标分支 ${env.CHANGE_TARGET} 不受支持"
-                        // 直接结束 pipeline
-                        return
-                    }
+                    currentBuild.description = "PR to ${env.CHANGE_TARGET}"
                 }
             }
         }
@@ -58,7 +54,6 @@ pipeline {
         }
     }
 
-    // ========== 新增：后处理逻辑 ==========
     post {
         always {
             script {
