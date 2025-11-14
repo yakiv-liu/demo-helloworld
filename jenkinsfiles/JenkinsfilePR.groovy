@@ -4,6 +4,16 @@
 def allowedTargetBranches = ['master', 'main']
 def shouldRunPipeline = (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET))
 
+properties([
+        // 关键配置：只保留10个分支项目
+        buildDiscarder(logRotator(
+                daysToKeep: -1,
+                numToKeep: 10,        // 保留10个分支项目
+                artifactDaysToKeep: -1,
+                artifactNumToKeep: -1
+        ))
+])
+
 if (!shouldRunPipeline) {
     echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
     currentBuild.result = 'SUCCESS'
@@ -15,6 +25,14 @@ if (!shouldRunPipeline) {
 pipeline {
     agent {
         label 'docker-jnlp-slave'
+    }
+
+    options {
+        // 每个分支项目内部的构建记录保留策略
+        buildDiscarder(logRotator(
+                daysToKeep: 7,     // 每个分支保留7天的构建记录
+                numToKeep: 5       // 每个分支最多保留5个构建记录
+        ))
     }
 
     parameters {
