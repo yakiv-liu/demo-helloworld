@@ -15,6 +15,8 @@ properties([
                 booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
                 string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
 //                booleanParam(name: 'IS_RELEASE', defaultValue: false, description: '正式发布'),
+                // === 新增参数：构建模式选择 ===
+                choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only'], description: '构建模式：build-only(仅构建) 或 full-pipeline(完整流水线)'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 // === 新增参数：控制是否跳过依赖检查 ===
                 booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
@@ -37,6 +39,8 @@ mainPipeline([
         rollback: params.ROLLBACK.toBoolean(),
         rollbackVersion: params.ROLLBACK_VERSION,
 //        isRelease: params.IS_RELEASE.toBoolean(),
+        // === 新增配置：构建模式 ===
+        buildMode: params.BUILD_MODE,
 
         // === 新增配置：传递跳过依赖检查参数 ===
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
