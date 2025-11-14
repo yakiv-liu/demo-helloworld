@@ -4,15 +4,6 @@
 def allowedTargetBranches = ['master', 'main']
 def shouldRunPipeline = (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET))
 
-properties([
-        // 关键配置：只保留10个分支项目
-        buildDiscarder(logRotator(
-                daysToKeep: -1,
-                numToKeep: 10,        // 保留10个分支项目
-                artifactDaysToKeep: -1,
-                artifactNumToKeep: -1
-        ))
-])
 
 if (!shouldRunPipeline) {
     echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
