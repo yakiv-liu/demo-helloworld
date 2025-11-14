@@ -1,5 +1,17 @@
 @Library('jenkins-pipeline-library@master')_
 
+// ========== 新增：在 pipeline 外部进行目标分支检查 ==========
+def allowedTargetBranches = ['master', 'main']
+def shouldRunPipeline = (env.CHANGE_TARGET && allowedTargetBranches.contains(env.CHANGE_TARGET))
+
+if (!shouldRunPipeline) {
+    echo "⏭️ 跳过 PR - 目标分支 ${env.CHANGE_TARGET} 不在允许列表中"
+    currentBuild.result = 'SUCCESS'
+    currentBuild.description = "跳过 - 目标分支 ${env.CHANGE_TARGET} 不受支持"
+    // 直接返回，不执行 pipeline
+    return
+}
+
 pipeline {
     agent {
         label 'docker-jnlp-slave'
@@ -13,20 +25,17 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('PR Info') {
             steps {
                 script {
-                    echo "检出代码..."
-                    // Multibranch Pipeline 会自动处理代码检出
-                    // 我们只需要验证代码是否已检出
-
-                    // ========== 关键修改：移除 dir('src') 包装 ==========
-                    sh 'git log -1 --oneline'
-                    sh 'git branch -a'
+                    echo "✅ PR 目标分支验证通过: ${env.CHANGE_TARGET}"
+                    echo "当前分支: ${env.BRANCH_NAME}"
+                    echo "PR 源分支: ${env.CHANGE_BRANCH}"
+                    echo "PR 编号: ${env.CHANGE_ID}"
+                    currentBuild.description = "PR to ${env.CHANGE_TARGET}"
                 }
             }
         }
-
         stage('Run PR Pipeline') {
             steps {
                 script {
@@ -41,6 +50,16 @@ pipeline {
                             scanIntensity: params.SCAN_INTENSITY
                     ])
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo "PR Pipeline 执行完成 - 结果: ${currentBuild.result}"
+                // 清理工作空间
+                cleanWs()
             }
         }
     }
