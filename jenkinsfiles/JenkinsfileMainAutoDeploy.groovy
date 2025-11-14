@@ -1,34 +1,5 @@
 @Library('jenkins-pipeline-library@master')_
 
-def isPR = env.CHANGE_ID != null
-def isMainBranchPush = env.BRANCH_NAME == 'main' && !isPR
-
-// 如果是 PR 事件，立即拒绝并给出明确提示
-if (isPR) {
-    currentBuild.displayName = "REJECTED-PR-${env.CHANGE_ID}"
-    currentBuild.description = "PR事件应由PR流水线处理"
-    error """🚫 PR事件路由错误！
-    
-            当前PR #${env.CHANGE_ID} 错误触发了 main-auto-deploy-pipeline。
-            这应该由 pr-pipeline 处理。
-            
-            请检查：
-            1. GitHub Webhook 配置
-            2. Jenkins trigger 配置
-            3. 确保 pr-pipeline 的 triggerForPr 设置为 true
-            
-            PR详细信息：
-            - 源分支: ${env.CHANGE_BRANCH}
-            - 目标分支: ${env.CHANGE_TARGET}
-            - PR ID: ${env.CHANGE_ID}
-    """
-}
-
-// 如果不是 main 分支的推送，也拒绝
-if (!isMainBranchPush) {
-    error "🚫 main-auto-deploy-pipeline 仅处理 main 分支的推送事件。当前分支: ${env.BRANCH_NAME}"
-}
-
 echo "✅ 确认：这是 main 分支的推送事件，继续执行main自动部署流水线"
 
 properties([
