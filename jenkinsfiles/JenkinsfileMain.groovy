@@ -46,7 +46,7 @@ mainPipeline([
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
 
         // 项目特定配置
-        appPort: 8086,
+        appPort: 8085,
         environmentHosts: [
                 staging: [host: '192.168.233.8'],
                 'pre-prod': [host: '192.168.233.9'],
