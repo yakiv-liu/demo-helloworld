@@ -9,17 +9,14 @@ properties([
         parameters([
                 string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称'),
                 string(name: 'PROJECT_REPO_URL', defaultValue: 'git@github.com:yakiv-liu/demo-helloworld.git', description: '项目代码仓库 URL'),
-                // string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),  // 新增分支参数，默认值为 master
-                string(name: 'PROJECT_BRANCH', defaultValue: 'main', description: '项目代码分支（默认：main）'),  // 新增分支参数，默认值为 main
+                string(name: 'PROJECT_BRANCH', defaultValue: 'master', description: '项目代码分支（默认：master）'),
+                choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only'], description: '构建模式：build-only(仅构建) 或 full-pipeline(完整流水线)'),
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
                 string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
-//                booleanParam(name: 'IS_RELEASE', defaultValue: false, description: '正式发布'),
-                // === 新增参数：构建模式选择 ===
-                choice(name: 'BUILD_MODE', choices: ['full-pipeline', 'build-only'], description: '构建模式：build-only(仅构建) 或 full-pipeline(完整流水线)'),
-                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
                 // === 新增参数：控制是否跳过依赖检查 ===
-                booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
+                booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
+                string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
         ])
 ])
 
