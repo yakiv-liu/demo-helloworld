@@ -14,9 +14,9 @@ properties([
                 choice(name: 'DEPLOY_ENV', choices: ['staging', 'pre-prod', 'prod'], description: '部署环境'),
                 booleanParam(name: 'ROLLBACK', defaultValue: false, description: '是否回滚'),
                 string(name: 'ROLLBACK_VERSION', defaultValue: '', description: '回滚版本号'),
-                // === 新增参数：控制是否跳过依赖检查 ===
-                booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
                 string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人'),
+                // === 控制是否跳过依赖检查 ===
+                booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）'),
         ])
 ])
 
@@ -25,23 +25,17 @@ mainPipeline([
         // 基础配置
         projectName: params.PROJECT_NAME,
         projectRepoUrl: params.PROJECT_REPO_URL,
-        projectBranch: params.PROJECT_BRANCH,  // 传递分支配置
+        projectBranch: params.PROJECT_BRANCH,
         org: 'yakiv-liu',
         repo: 'demo-helloworld',
         agentLabel: 'docker-jnlp-slave',
         defaultEmail: params.EMAIL_RECIPIENTS,
-
-        // 用户选择参数
         deployEnv: params.DEPLOY_ENV,
         rollback: params.ROLLBACK.toBoolean(),
         rollbackVersion: params.ROLLBACK_VERSION,
-//        isRelease: params.IS_RELEASE.toBoolean(),
-        // === 新增配置：构建模式 ===
         buildMode: params.BUILD_MODE,
-
-        // === 新增配置：传递跳过依赖检查参数 ===
+        // === 传递跳过依赖检查参数 ===
         skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
-
         // 项目特定配置
         appPort: 8085,
         environmentHosts: [
