@@ -20,6 +20,8 @@ pipeline {
 
     parameters {
         string(name: 'PROJECT_NAME', defaultValue: 'demo-helloworld', description: '项目名称')
+        string(name: 'APP_PORT', defaultValue: '8085', description: '应用服务端口号')
+        string(name: 'AGENT_LABEL', defaultValue: 'docker-jnlp-slave', description: 'Jenkins Agent节点标签')
         string(name: 'EMAIL_RECIPIENTS', defaultValue: '251934304@qq.com', description: '邮件接收人')
         booleanParam(name: 'SKIP_DEPENDENCY_CHECK', defaultValue: true, description: '跳过依赖检查以加速构建（默认跳过）')
         choice(name: 'SCAN_INTENSITY', choices: ['fast', 'standard', 'deep'], description: '安全扫描强度')
@@ -44,8 +46,8 @@ pipeline {
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
                             repo: 'demo-helloworld',
-                            agentLabel: 'docker-jnlp-slave',
-                            defaultBranch: 'main',
+                            agentLabel: ${env.AGENT_LABEL},
+                            defaultBranch: ${env.CHANGE_BRANCH},
                             defaultEmail: params.EMAIL_RECIPIENTS,
                             skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
                             scanIntensity: params.SCAN_INTENSITY
