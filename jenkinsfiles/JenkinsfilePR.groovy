@@ -46,8 +46,8 @@ pipeline {
                             projectName: params.PROJECT_NAME,
                             org: 'yakiv-liu',
                             repo: 'demo-helloworld',
-                            agentLabel: ${env.AGENT_LABEL},
-                            defaultBranch: ${env.CHANGE_BRANCH},
+                            agentLabel: params.AGENT_LABEL,
+                            appPort: params.APP_PORT.toInteger(),
                             defaultEmail: params.EMAIL_RECIPIENTS,
                             skipDependencyCheck: params.SKIP_DEPENDENCY_CHECK.toBoolean(),
                             scanIntensity: params.SCAN_INTENSITY
